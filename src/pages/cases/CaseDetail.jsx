@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+
+const ProgressTimeline = lazy(() => import('@/pages/progress/ProgressTimeline'))
+const EvidenceList = lazy(() => import('@/pages/evidence/EvidenceList'))
 import {
   getCaseById, assignInvestigator, updateCaseStatus, deleteCase,
 } from '@/api/case.api'
@@ -337,20 +340,18 @@ export default function CaseDetail() {
   )
 }
 
-// ─── Placeholder tabs — replaced by feature/case-progress & feature/evidence ──
-
 function ProgressTab({ caseId }) {
   return (
-    <div className="text-sm text-muted-foreground py-6 text-center">
-      Progress timeline — implemented in feature/case-progress
-    </div>
+    <Suspense fallback={<div className="text-sm text-muted-foreground py-4">Loading…</div>}>
+      <ProgressTimeline caseId={caseId} />
+    </Suspense>
   )
 }
 
 function EvidenceTab({ caseId }) {
   return (
-    <div className="text-sm text-muted-foreground py-6 text-center">
-      Evidence list — implemented in feature/evidence
-    </div>
+    <Suspense fallback={<div className="text-sm text-muted-foreground py-4">Loading…</div>}>
+      <EvidenceList caseId={caseId} />
+    </Suspense>
   )
 }
