@@ -193,7 +193,7 @@ export default function EvidenceList({ caseId }) {
   const fetch = () => {
     setLoading(true)
     getCaseEvidence(caseId)
-      .then((res) => setItems(res.data.data || []))
+      .then((res) => setItems(res.data.data?.evidence || []))
       .catch(() => setError('Failed to load evidence.'))
       .finally(() => setLoading(false))
   }
