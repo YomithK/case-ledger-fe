@@ -48,18 +48,13 @@ export default function CaseAnalytics() {
       getYearlyCases(),
     ])
       .then(([s, p, c, m, y]) => {
-        const toEntries = (d, labels) =>
-          Object.entries(d?.data?.data || {}).map(([k, v]) => ({ name: labels[k] || k, value: v }))
+        const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-        setByStatus(toEntries(s, CASE_STATUS_LABELS))
-        setByPriority(toEntries(p, CASE_PRIORITY_LABELS))
-        setByCategory(toEntries(c, CASE_CATEGORY_LABELS))
-
-        const mData = m?.data?.data || []
-        setMonthly(Array.isArray(mData) ? mData : Object.entries(mData).map(([k, v]) => ({ name: k, count: v })))
-
-        const yData = y?.data?.data || []
-        setYearly(Array.isArray(yData) ? yData : Object.entries(yData).map(([k, v]) => ({ name: k, count: v })))
+        setByStatus((s?.data?.data || []).map(d => ({ name: CASE_STATUS_LABELS[d.status] || d.status, value: d.count })))
+        setByPriority((p?.data?.data || []).map(d => ({ name: CASE_PRIORITY_LABELS[d.priority] || d.priority, value: d.count })))
+        setByCategory((c?.data?.data || []).map(d => ({ name: CASE_CATEGORY_LABELS[d.category] || d.category, value: d.count })))
+        setMonthly((m?.data?.data || []).map(d => ({ name: `${MONTH_NAMES[d.month - 1]} ${d.year}`, count: d.count })))
+        setYearly((y?.data?.data || []).map(d => ({ name: String(d.year), count: d.count })))
       })
       .catch(() => {})
       .finally(() => setLoading(false))
