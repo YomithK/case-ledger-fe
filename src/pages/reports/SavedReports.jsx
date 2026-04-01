@@ -93,7 +93,7 @@ export default function SavedReports() {
   const fetch = () => {
     setLoading(true)
     getSavedReports()
-      .then((res) => setReports(res.data.data || []))
+      .then((res) => setReports(res.data.data?.reports || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }
