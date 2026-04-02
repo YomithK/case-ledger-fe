@@ -88,7 +88,7 @@ export default function ProgressTimeline({ caseId }) {
   const fetchProgress = () => {
     setLoading(true)
     getCaseProgress(caseId)
-      .then((res) => setEntries(res.data.data || []))
+      .then((res) => setEntries(res.data.data?.progress || []))
       .catch(() => setError('Failed to load progress.'))
       .finally(() => setLoading(false))
   }
