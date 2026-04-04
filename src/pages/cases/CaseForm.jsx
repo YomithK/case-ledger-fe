@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, ArrowLeft } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   CASE_CATEGORIES, CASE_CATEGORY_LABELS, CASE_PRIORITY, CASE_PRIORITY_LABELS,
   CONFIDENTIAL_LEVELS,
@@ -75,13 +76,17 @@ export default function CaseForm() {
     try {
       if (isEdit) {
         await updateCase(id, form)
+        toast.success('Case updated successfully.')
         navigate(`/cases/${id}`)
       } else {
-        const res = await createCase(form)
-        navigate(`/cases/${res.data.data._id}`)
+        await createCase(form)
+        toast.success('Case created successfully.')
+        navigate('/cases')
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save case.')
+      const msg = err.response?.data?.message || 'Failed to save case.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

@@ -3,7 +3,8 @@ import { lazy, Suspense } from 'react'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import { ROLES } from '@/utils/constants'
 
-// Lazy-loaded pages — will be implemented in feature branches
+// Lazy-loaded pages
+const Landing = lazy(() => import('@/pages/landing/Landing'))
 const AppLayout = lazy(() => import('@/components/layout/AppLayout'))
 
 const Login = lazy(() => import('@/pages/auth/Login'))
@@ -35,6 +36,14 @@ const PageLoader = () => (
 const router = createBrowserRouter([
   // Public routes
   {
+    path: '/',
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Landing />
+      </Suspense>
+    ),
+  },
+  {
     path: '/login',
     element: (
       <Suspense fallback={<PageLoader />}>
@@ -62,8 +71,6 @@ const router = createBrowserRouter([
           </Suspense>
         ),
         children: [
-          { path: '/', element: <Navigate to="/dashboard" replace /> },
-
           { path: '/dashboard', element: <Suspense fallback={<PageLoader />}><Dashboard /></Suspense> },
 
           // Cases
@@ -176,7 +183,7 @@ const router = createBrowserRouter([
   },
 
   // Catch-all
-  { path: '*', element: <Navigate to="/dashboard" replace /> },
+  { path: '*', element: <Navigate to="/" replace /> },
 ])
 
 export default router

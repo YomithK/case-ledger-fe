@@ -41,9 +41,9 @@ export default function UserDetail() {
     setLoading(true)
     getUserById(id)
       .then((res) => {
-        const u = res.data.data
-        setUser(u)
-        setNewRole(u.role)
+        const userData = res.data.data.user
+        setUser(userData)
+        setNewRole(userData.role)
       })
       .catch(() => setError('Failed to load user.'))
       .finally(() => setLoading(false))

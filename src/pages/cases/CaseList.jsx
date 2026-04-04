@@ -33,9 +33,10 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Plus, Search, X, AlertCircle } from 'lucide-react'
+import Pagination from '@/components/shared/Pagination'
 
-const PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 10
 
 export default function CaseList() {
   const { role } = useAuth()
@@ -44,6 +45,7 @@ export default function CaseList() {
   const [cases, setCases] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -54,12 +56,21 @@ export default function CaseList() {
 
   const debouncedSearch = useDebounce(search)
 
+  const hasActiveFilters = search || statusFilter !== 'ALL' || priorityFilter !== 'ALL' || categoryFilter !== 'ALL'
+
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('ALL')
+    setPriorityFilter('ALL')
+    setCategoryFilter('ALL')
+  }
+
   const fetchCases = useCallback(() => {
     setLoading(true)
     setError('')
     const params = {
       page,
-      limit: PAGE_SIZE,
+      limit: pageSize,
       ...(debouncedSearch && { search: debouncedSearch }),
       ...(statusFilter !== 'ALL' && { status: statusFilter }),
       ...(priorityFilter !== 'ALL' && { priority: priorityFilter }),
@@ -68,22 +79,22 @@ export default function CaseList() {
     getCases(params)
       .then((res) => {
         const d = res.data.data
-        setCases(d?.cases || d || [])
-        setTotal(d?.total || 0)
+        setCases(d?.cases || [])
+        setTotal(d?.pagination?.totalCount || 0)
       })
       .catch(() => setError('Failed to load cases.'))
       .finally(() => setLoading(false))
-  }, [page, debouncedSearch, statusFilter, priorityFilter, categoryFilter])
+  }, [page, pageSize, debouncedSearch, statusFilter, priorityFilter, categoryFilter])
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, statusFilter, priorityFilter, categoryFilter])
+  }, [debouncedSearch, statusFilter, priorityFilter, categoryFilter, pageSize])
 
   useEffect(() => {
     fetchCases()
   }, [fetchCases])
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
     <div className="space-y-5">
@@ -150,6 +161,12 @@ export default function CaseList() {
             ))}
           </SelectContent>
         </Select>
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+            <X className="h-3.5 w-3.5 mr-1" /> Clear filters
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -174,7 +191,7 @@ export default function CaseList() {
             </TableHeader>
             <TableBody>
               {loading
-                ? Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                ? Array.from({ length: pageSize }).map((_, i) => (
                     <TableRow key={i}>
                       {Array.from({ length: 6 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
@@ -212,22 +229,14 @@ export default function CaseList() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page === totalPages}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalCount={total}
+        limit={pageSize}
+        onPageChange={setPage}
+        onLimitChange={setPageSize}
+      />
     </div>
   )
 }
