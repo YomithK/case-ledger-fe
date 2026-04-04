@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
-import { Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Search, X, AlertCircle } from 'lucide-react'
+import Pagination from '@/components/shared/Pagination'
 
 const ROLE_COLORS = {
   [ROLES.ADMIN]: 'bg-purple-100 text-purple-800',
@@ -31,6 +31,7 @@ export default function UserList() {
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -40,30 +41,38 @@ export default function UserList() {
 
   const debouncedSearch = useDebounce(search)
 
+  const hasActiveFilters = search || roleFilter !== 'ALL' || activeFilter !== 'ALL'
+
+  const clearFilters = () => {
+    setSearch('')
+    setRoleFilter('ALL')
+    setActiveFilter('ALL')
+  }
+
   const fetchUsers = useCallback(() => {
     setLoading(true)
     setError('')
     const params = {
       page,
-      limit: PAGE_SIZE,
+      limit: pageSize,
       ...(debouncedSearch && { search: debouncedSearch }),
-      ...(roleFilter !== 'ALL' && { role: roleFilter }),
-      ...(activeFilter !== 'ALL' && { isActive: activeFilter === 'ACTIVE' }),
+      ...(roleFilter !== 'ALL' && { type: roleFilter }),
+      ...(activeFilter !== 'ALL' && { status: activeFilter.toLowerCase() }),
     }
     getUsers(params)
       .then((res) => {
         const d = res.data.data
-        setUsers(d?.users || d || [])
-        setTotal(d?.total || 0)
+        setUsers(d?.users || [])
+        setTotal(d?.pagination?.totalCount || 0)
       })
       .catch(() => setError('Failed to load users.'))
       .finally(() => setLoading(false))
-  }, [page, debouncedSearch, roleFilter, activeFilter])
+  }, [page, pageSize, debouncedSearch, roleFilter, activeFilter])
 
-  useEffect(() => { setPage(1) }, [debouncedSearch, roleFilter, activeFilter])
+  useEffect(() => { setPage(1) }, [debouncedSearch, roleFilter, activeFilter, pageSize])
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
     <div className="space-y-5">
@@ -101,6 +110,12 @@ export default function UserList() {
             <SelectItem value="INACTIVE">Inactive</SelectItem>
           </SelectContent>
         </Select>
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+            <X className="h-3.5 w-3.5 mr-1" /> Clear filters
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -124,7 +139,7 @@ export default function UserList() {
             </TableHeader>
             <TableBody>
               {loading
-                ? Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                ? Array.from({ length: pageSize }).map((_, i) => (
                     <TableRow key={i}>
                       {Array.from({ length: 6 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
@@ -160,19 +175,14 @@ export default function UserList() {
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Page {page} of {totalPages}</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page === totalPages}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalCount={total}
+        limit={pageSize}
+        onPageChange={setPage}
+        onLimitChange={setPageSize}
+      />
     </div>
   )
 }

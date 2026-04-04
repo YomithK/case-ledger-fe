@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, Plus, Edit2, Trash2, Check, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 
@@ -102,11 +103,14 @@ export default function ProgressTimeline({ caseId }) {
     setAddError('')
     try {
       await addCaseProgress(caseId, addForm)
+      toast.success('Progress update added.')
       setAddForm({ message: '', statusSnapshot: '' })
       setShowAdd(false)
       fetchProgress()
     } catch (err) {
-      setAddError(err.response?.data?.message || 'Failed to add progress.')
+      const msg = err.response?.data?.message || 'Failed to add progress.'
+      setAddError(msg)
+      toast.error(msg)
     } finally {
       setAdding(false)
     }
@@ -117,10 +121,11 @@ export default function ProgressTimeline({ caseId }) {
     setSaving(true)
     try {
       await updateProgress(editEntry._id, { message: editMessage })
+      toast.success('Progress update saved.')
       setEditEntry(null)
       fetchProgress()
     } catch (err) {
-      console.error(err)
+      toast.error(err.response?.data?.message || 'Failed to save progress update.')
     } finally {
       setSaving(false)
     }
@@ -131,10 +136,11 @@ export default function ProgressTimeline({ caseId }) {
     setDeleting(true)
     try {
       await deleteProgress(deleteEntry._id)
+      toast.success('Progress entry deleted.')
       setDeleteEntry(null)
       fetchProgress()
     } catch (err) {
-      console.error(err)
+      toast.error(err.response?.data?.message || 'Failed to delete progress entry.')
     } finally {
       setDeleting(false)
     }

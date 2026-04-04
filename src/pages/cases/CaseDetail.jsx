@@ -29,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, ArrowLeft, Edit, UserCheck, RefreshCw, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 // ─── Assign Investigator Modal ───────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ function AssignModal({ open, onClose, caseId, onSuccess }) {
     if (!open) return
     getAssignableUsers({ role: ROLES.INVESTIGATOR, search })
       .then((res) => setUsers(res.data.data || []))
-      .catch(() => {})
+      .catch(() => { })
   }, [open, search])
 
   const handleAssign = async () => {
@@ -50,10 +51,11 @@ function AssignModal({ open, onClose, caseId, onSuccess }) {
     setLoading(true)
     try {
       await assignInvestigator(caseId, { investigatorId: selected })
+      toast.success('Investigator assigned successfully.')
       onSuccess()
       onClose()
     } catch (err) {
-      console.error(err)
+      toast.error(err.response?.data?.message || 'Failed to assign investigator.')
     } finally {
       setLoading(false)
     }
@@ -101,10 +103,11 @@ function StatusModal({ open, onClose, caseId, currentStatus, onSuccess }) {
     setLoading(true)
     try {
       await updateCaseStatus(caseId, { status: newStatus })
+      toast.success('Case status updated successfully.')
       onSuccess()
       onClose()
     } catch (err) {
-      console.error(err)
+      toast.error(err.response?.data?.message || 'Failed to update status.')
     } finally {
       setLoading(false)
     }
@@ -178,8 +181,10 @@ export default function CaseDetail() {
     setDeleting(true)
     try {
       await deleteCase(id)
+      toast.success('Case deleted successfully.')
       navigate('/cases')
-    } catch {
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete case.')
       setDeleting(false)
     }
   }
@@ -207,7 +212,7 @@ export default function CaseDetail() {
     )
   }
 
-  const c = caseData
+  const case_data = caseData.case
 
   return (
     <div className="space-y-6">
@@ -219,11 +224,11 @@ export default function CaseDetail() {
           </Button>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold">{c.title}</h1>
-              <StatusBadge status={c.status} />
-              <PriorityBadge priority={c.priority} />
+              <h1 className="text-xl font-bold">{case_data.title}</h1>
+              <StatusBadge status={case_data.status} />
+              <PriorityBadge priority={case_data.priority} />
             </div>
-            <p className="text-muted-foreground text-xs mt-0.5 font-mono">{c.caseNumber}</p>
+            <p className="text-muted-foreground text-xs mt-0.5 font-mono">{case_data.caseNumber}</p>
           </div>
         </div>
 
@@ -238,7 +243,7 @@ export default function CaseDetail() {
               <UserCheck className="h-3.5 w-3.5 mr-1.5" /> Assign
             </Button>
           )}
-          {canUpdateStatus && VALID_STATUS_TRANSITIONS[c.status]?.length > 0 && (
+          {canUpdateStatus && VALID_STATUS_TRANSITIONS[case_data.status]?.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setStatusOpen(true)}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Status
             </Button>
@@ -267,14 +272,14 @@ export default function CaseDetail() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {[
-                ['Category', CASE_CATEGORY_LABELS[c.category] || c.category],
-                ['Priority', CASE_PRIORITY_LABELS[c.priority] || c.priority],
-                ['Incident Date', c.incidentDate ? new Date(c.incidentDate).toLocaleDateString() : '—'],
-                ['Location', c.location],
-                ['Confidentiality', c.confidentialLevel],
-                ['Reference #', c.caseReferenceNumber || '—'],
-                ['Reported By', c.reportedBy?.name || '—'],
-                ['Assigned To', c.assignedInvestigator?.name || 'Unassigned'],
+                ['Category', CASE_CATEGORY_LABELS[case_data.category] || case_data.category],
+                ['Priority', CASE_PRIORITY_LABELS[case_data.priority] || case_data.priority],
+                ['Incident Date', case_data.incidentDate ? new Date(case_data.incidentDate).toLocaleDateString() : '—'],
+                ['Location', case_data.location],
+                ['Confidentiality', case_data.confidentialLevel],
+                ['Reference #', case_data.caseReferenceNumber || '—'],
+                ['Reported By', case_data.reportedBy?.name || '—'],
+                ['Assigned To', case_data.assignedInvestigator?.name || 'Unassigned'],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between">
                   <span className="text-muted-foreground">{label}</span>
@@ -289,18 +294,18 @@ export default function CaseDetail() {
               <CardTitle className="text-base">Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{c.description}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{case_data.description}</p>
             </CardContent>
           </Card>
 
-          {c.relatedUsers?.length > 0 && (
+          {case_data.relatedUsers?.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Related Persons</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {c.relatedUsers.map(({ user: u, role: r }) => (
+                  {case_data.relatedUsers.map(({ user: u, role: r }) => (
                     <div key={u._id} className="flex items-center justify-between text-sm">
                       <span>{u.name} — {u.email}</span>
                       <span className="text-muted-foreground text-xs">{r}</span>
@@ -325,7 +330,7 @@ export default function CaseDetail() {
 
       {/* Modals */}
       <AssignModal open={assignOpen} onClose={() => setAssignOpen(false)} caseId={id} onSuccess={fetch} />
-      <StatusModal open={statusOpen} onClose={() => setStatusOpen(false)} caseId={id} currentStatus={c.status} onSuccess={fetch} />
+      <StatusModal open={statusOpen} onClose={() => setStatusOpen(false)} caseId={id} currentStatus={case_data.status} onSuccess={fetch} />
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

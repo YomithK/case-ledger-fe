@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ROLES } from '@/utils/constants'
+import { toast } from 'sonner'
 
 const ROLE_COLORS = {
   [ROLES.ADMIN]: 'bg-purple-100 text-purple-800',
@@ -25,25 +26,22 @@ export default function Profile() {
     organizationName: user?.organizationName || '',
   })
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-    setSuccess(false)
-    setError('')
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError('')
     try {
-      const res = await updateUser(user._id, form)
-      updateUserInContext(res.data.data)
-      setSuccess(true)
+      const payload = { name: form.name, phoneNumber: form.phoneNumber }
+      if (user?.role === ROLES.NGO) payload.organizationName = form.organizationName
+      const res = await updateUser(user._id, payload)
+      updateUserInContext(res.data.data.user)
+      toast.success('Profile updated successfully.')
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update profile.')
+      toast.error(err.response?.data?.message || 'Failed to update profile.')
     } finally {
       setLoading(false)
     }
@@ -87,17 +85,6 @@ export default function Profile() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-700">
-                Profile updated successfully.
-              </div>
-            )}
-
             <div className="space-y-1.5">
               <Label htmlFor="name">Full Name</Label>
               <Input id="name" name="name" value={form.name} onChange={handleChange} />
