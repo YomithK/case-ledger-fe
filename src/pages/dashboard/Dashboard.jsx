@@ -59,16 +59,16 @@ function AdminDashboard() {
   }, [])
 
   const statusChartData = data?.casesByStatus
-    ? Object.entries(data.casesByStatus).map(([name, value]) => ({
-        name: CASE_STATUS_LABELS[name] || name,
-        value,
+    ? data.casesByStatus.map(({ status, count }) => ({
+        name: CASE_STATUS_LABELS[status] || status,
+        value: count,
       }))
     : []
 
   const priorityChartData = data?.casesByPriority
-    ? Object.entries(data.casesByPriority).map(([name, value]) => ({
-        name: CASE_PRIORITY_LABELS[name] || name,
-        value,
+    ? data.casesByPriority.map(({ priority, count }) => ({
+        name: CASE_PRIORITY_LABELS[priority] || priority,
+        value: count,
       }))
     : []
 
