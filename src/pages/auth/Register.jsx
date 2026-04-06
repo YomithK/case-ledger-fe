@@ -18,7 +18,7 @@ import { ROLES } from '@/utils/constants'
 const ROLE_OPTIONS = [
   { value: ROLES.NGO, label: 'NGO' },
   { value: ROLES.INVESTIGATOR, label: 'Investigator' },
-  { value: ROLES.USER, label: 'User' },
+  { value: ROLES.VICTIM, label: 'Victim' },
 ]
 
 export default function Register() {

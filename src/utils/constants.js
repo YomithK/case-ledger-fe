@@ -2,6 +2,7 @@ export const ROLES = {
   ADMIN: 'ADMIN',
   NGO: 'NGO',
   INVESTIGATOR: 'INVESTIGATOR',
+  VICTIM: 'VICTIM',
   USER: 'USER',
 }
 
