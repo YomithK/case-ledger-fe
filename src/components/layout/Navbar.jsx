@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -31,6 +31,7 @@ export default function Navbar() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 h-9">
             <Avatar className="h-7 w-7">
+              <AvatarImage src={user?.profilePhoto} alt={user?.name} />
               <AvatarFallback className="text-xs">{initials}</AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium hidden sm:inline">{user?.name}</span>
