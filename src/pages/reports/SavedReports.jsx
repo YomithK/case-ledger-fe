@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSavedReports, createSavedReport, deleteSavedReport, downloadCasesCsv } from '@/api/report.api'
+import { getSavedReports, createSavedReport, deleteSavedReport, downloadSavedReport } from '@/api/report.api'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +25,7 @@ const REPORT_TYPE_LABELS = {
 }
 
 function CreateModal({ open, onClose, onSuccess }) {
-  const [form, setForm] = useState({ name: '', description: '', reportType: REPORT_TYPES.CASE_ANALYTICS })
+  const [form, setForm] = useState({ name: '', description: '', reportType: REPORT_TYPES.CASE_ANALYTICS, startDate: '', endDate: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -33,8 +33,17 @@ function CreateModal({ open, onClose, onSuccess }) {
     if (!form.name.trim()) { setError('Name is required.'); return }
     setSaving(true)
     try {
-      await createSavedReport(form)
-      setForm({ name: '', description: '', reportType: REPORT_TYPES.CASE_ANALYTICS })
+      const payload = {
+        name: form.name,
+        description: form.description,
+        reportType: form.reportType,
+        filters: {
+          ...(form.startDate && { startDate: form.startDate }),
+          ...(form.endDate && { endDate: form.endDate }),
+        },
+      }
+      await createSavedReport(payload)
+      setForm({ name: '', description: '', reportType: REPORT_TYPES.CASE_ANALYTICS, startDate: '', endDate: '' })
       onSuccess()
       onClose()
     } catch (err) {
@@ -47,7 +56,7 @@ function CreateModal({ open, onClose, onSuccess }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>Save Report Configuration</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Generate Report</DialogTitle></DialogHeader>
         <div className="space-y-3">
           {error && (
             <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
@@ -69,6 +78,16 @@ function CreateModal({ open, onClose, onSuccess }) {
               </SelectContent>
             </Select>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>Start Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input type="date" value={form.startDate} onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>End Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input type="date" value={form.endDate} onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))} />
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
             <Textarea placeholder="What does this report track?" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
@@ -76,7 +95,7 @@ function CreateModal({ open, onClose, onSuccess }) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Generating…' : 'Generate'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -89,7 +108,7 @@ export default function SavedReports() {
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteItem, setDeleteItem] = useState(null)
   const [deleting, setDeleting] = useState(false)
-  const [downloading, setDownloading] = useState(false)
+  const [downloadingId, setDownloadingId] = useState(null)
 
   const fetch = () => {
     setLoading(true)
@@ -99,20 +118,20 @@ export default function SavedReports() {
       .finally(() => setLoading(false))
   }
 
-  const handleDownloadCsv = async () => {
-    setDownloading(true)
+  const handleDownloadReport = async (report) => {
+    setDownloadingId(report._id)
     try {
-      const res = await downloadCasesCsv()
+      const res = await downloadSavedReport(report._id)
       const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
       const a = document.createElement('a')
       a.href = url
-      a.download = `cases-report-${new Date().toISOString().split('T')[0]}.csv`
+      a.download = `${report.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('CSV download failed', err)
     } finally {
-      setDownloading(false)
+      setDownloadingId(null)
     }
   }
 
@@ -138,15 +157,9 @@ export default function SavedReports() {
           <h1 className="text-2xl font-bold tracking-tight">Saved Reports</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Manage saved report configurations</p>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleDownloadCsv} disabled={downloading}>
-            <Download className="h-3.5 w-3.5 mr-1.5" />
-            {downloading ? 'Downloading…' : 'Download CSV'}
-          </Button>
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" /> New Report
-          </Button>
-        </div>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" /> New Report
+        </Button>
       </div>
 
       {loading ? (
@@ -173,11 +186,21 @@ export default function SavedReports() {
                   </Button>
                 </div>
               </CardHeader>
-              {r.description && (
-                <CardContent className="pt-0">
+              <CardContent className="pt-0 space-y-2">
+                {r.description && (
                   <p className="text-xs text-muted-foreground line-clamp-2">{r.description}</p>
-                </CardContent>
-              )}
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-7 text-xs"
+                  disabled={downloadingId === r._id}
+                  onClick={() => handleDownloadReport(r)}
+                >
+                  <Download className="h-3 w-3 mr-1.5" />
+                  {downloadingId === r._id ? 'Downloading…' : 'Download CSV'}
+                </Button>
+              </CardContent>
             </Card>
           ))}
         </div>

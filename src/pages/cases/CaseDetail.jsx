@@ -9,7 +9,7 @@ import {
 import { getAssignableUsers, getVictimUsers } from '@/api/ref.api'
 import { useAuth } from '@/hooks/useAuth'
 import {
-  ROLES, CASE_STATUS_LABELS, CASE_CATEGORY_LABELS, CASE_PRIORITY_LABELS,
+  ROLES, CASE_STATUS, CASE_STATUS_LABELS, CASE_CATEGORY_LABELS, CASE_PRIORITY_LABELS,
   CONFIDENTIAL_LEVELS, VALID_STATUS_TRANSITIONS,
 } from '@/utils/constants'
 import StatusBadge from '@/components/shared/StatusBadge'
@@ -26,25 +26,24 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, ArrowLeft, Edit, UserCheck, RefreshCw, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
+import { Input } from '@/components/ui/input'
 
 // ─── Assign Investigator Modal ───────────────────────────────────────────────
 
 function AssignModal({ open, onClose, caseId, onSuccess }) {
-  const [search, setSearch] = useState('')
   const [users, setUsers] = useState([])
   const [selected, setSelected] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    getAssignableUsers({ role: ROLES.INVESTIGATOR, search })
-      .then((res) => setUsers(res.data.data || []))
+    getAssignableUsers({ role: ROLES.INVESTIGATOR })
+      .then((res) => setUsers(res.data.data?.users || []))
       .catch(() => { })
-  }, [open, search])
+  }, [open])
 
   const handleAssign = async () => {
     if (!selected) return
@@ -68,12 +67,11 @@ function AssignModal({ open, onClose, caseId, onSuccess }) {
           <DialogTitle>Assign Investigator</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <Input placeholder="Search investigators…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <Select value={selected} onValueChange={setSelected}>
             <SelectTrigger>
               <SelectValue placeholder="Select investigator" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[9999]">
               {users.map((u) => (
                 <SelectItem key={u._id} value={u._id}>{u.name} — {u.email}</SelectItem>
               ))}
@@ -129,7 +127,7 @@ function StatusModal({ open, onClose, caseId, currentStatus, onSuccess }) {
               <SelectTrigger>
                 <SelectValue placeholder="Select new status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[9999]">
                 {nextStatuses.length === 0
                   ? <SelectItem value="_none" disabled>No valid transitions</SelectItem>
                   : nextStatuses.map((s) => (
@@ -155,7 +153,6 @@ function StatusModal({ open, onClose, caseId, currentStatus, onSuccess }) {
 
 function AssignVictimModal({ open, onClose, caseId, onSuccess }) {
   const [mode, setMode] = useState('select') // 'select' | 'invite'
-  const [search, setSearch] = useState('')
   const [victims, setVictims] = useState([])
   const [selected, setSelected] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
@@ -163,10 +160,10 @@ function AssignVictimModal({ open, onClose, caseId, onSuccess }) {
 
   useEffect(() => {
     if (!open || mode !== 'select') return
-    getVictimUsers({ search })
-      .then((res) => setVictims(res.data.data || []))
+    getVictimUsers()
+      .then((res) => setVictims(res.data.data?.users || []))
       .catch(() => { })
-  }, [open, search, mode])
+  }, [open, mode])
 
   const handleAssign = async () => {
     if (mode === 'select' && !selected) return
@@ -203,12 +200,11 @@ function AssignVictimModal({ open, onClose, caseId, onSuccess }) {
 
           {mode === 'select' ? (
             <>
-              <Input placeholder="Search victims…" value={search} onChange={(e) => setSearch(e.target.value)} />
               <Select value={selected} onValueChange={setSelected}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select victim" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[9999]">
                   {victims.length === 0
                     ? <SelectItem value="_none" disabled>No victims found</SelectItem>
                     : victims.map((u) => (
@@ -281,9 +277,10 @@ export default function CaseDetail() {
     }
   }
 
+  const isCaseClosed = caseData?.case?.status === CASE_STATUS.RESOLVED || caseData?.case?.status === CASE_STATUS.CLOSED
   const canEdit = role === ROLES.ADMIN || (role === ROLES.INVESTIGATOR && caseData?.assignedInvestigator?._id === user?._id)
-  const canAssign = role === ROLES.ADMIN || role === ROLES.NGO
-  const canAssignVictim = role === ROLES.ADMIN || role === ROLES.INVESTIGATOR
+  const canAssign = (role === ROLES.ADMIN || role === ROLES.NGO) && !isCaseClosed && !caseData?.case?.assignedInvestigator
+  const canAssignVictim = (role === ROLES.ADMIN || role === ROLES.INVESTIGATOR) && !isCaseClosed && !caseData?.case?.victim
   const canUpdateStatus = role === ROLES.ADMIN || (role === ROLES.INVESTIGATOR && caseData?.assignedInvestigator?._id === user?._id)
   const canDelete = role === ROLES.ADMIN
 
@@ -333,12 +330,12 @@ export default function CaseDetail() {
           )}
           {canAssign && (
             <Button variant="outline" size="sm" onClick={() => setAssignOpen(true)}>
-              <UserCheck className="h-3.5 w-3.5 mr-1.5" /> Assign
+              <UserCheck className="h-3.5 w-3.5 mr-1.5" /> Assign Investigator
             </Button>
           )}
           {canAssignVictim && (
             <Button variant="outline" size="sm" onClick={() => setVictimOpen(true)}>
-              <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Victim
+              <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Assign Victim
             </Button>
           )}
           {canUpdateStatus && VALID_STATUS_TRANSITIONS[case_data.status]?.length > 0 && (
