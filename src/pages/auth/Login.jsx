@@ -30,7 +30,7 @@ export default function Login() {
     setLoading(true)
     try {
       const user = await login(form)
-      navigate('/dashboard')
+      navigate(user.role === 'VICTIM' ? '/my-cases' : '/dashboard')
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.')
     } finally {

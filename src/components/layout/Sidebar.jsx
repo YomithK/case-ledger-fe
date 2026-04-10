@@ -11,8 +11,9 @@ import { ROLES } from '@/utils/constants'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: null },
-  { to: '/cases', label: 'Cases', icon: FolderOpen, roles: null },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [ROLES.ADMIN, ROLES.NGO, ROLES.INVESTIGATOR] },
+  { to: '/my-cases', label: 'My Cases', icon: FolderOpen, roles: [ROLES.VICTIM] },
+  { to: '/cases', label: 'Cases', icon: FolderOpen, roles: [ROLES.ADMIN, ROLES.NGO, ROLES.INVESTIGATOR] },
   {
     to: '/users',
     label: 'Users',

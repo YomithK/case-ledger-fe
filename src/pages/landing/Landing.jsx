@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Shield, FileText, Users, BarChart3, Lock, ArrowRight } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Shield, FileText, Users, BarChart3, Lock, ArrowRight, Globe } from 'lucide-react'
+import { getPublicCases } from '@/api/case.api'
+import { CASE_STATUS_COLORS, CASE_PRIORITY_COLORS, CASE_STATUS_LABELS, CASE_CATEGORY_LABELS } from '@/utils/constants'
 
 const FEATURES = [
   {
@@ -32,6 +36,15 @@ const FEATURES = [
 
 export default function Landing() {
   const navigate = useNavigate()
+  const [publicCases, setPublicCases] = useState([])
+  const [casesLoading, setCasesLoading] = useState(true)
+
+  useEffect(() => {
+    getPublicCases({ limit: 6 })
+      .then((res) => setPublicCases(res.data.data?.cases || []))
+      .catch(() => {})
+      .finally(() => setCasesLoading(false))
+  }, [])
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -92,6 +105,52 @@ export default function Landing() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Public Cases */}
+        <section className="py-20 px-6 border-t">
+          <div className="max-w-5xl mx-auto space-y-8">
+            <div className="text-center space-y-3">
+              <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-4 py-1.5 text-sm font-medium text-green-800">
+                <Globe className="h-3.5 w-3.5" />
+                Public Cases
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Publicly Available Cases</h2>
+              <p className="text-muted-foreground text-sm max-w-lg mx-auto">
+                These cases are accessible for research, awareness, and accountability. No account required.
+              </p>
+            </div>
+            {casesLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-40 rounded-xl border bg-muted/30 animate-pulse" />
+                ))}
+              </div>
+            ) : publicCases.length === 0 ? (
+              <p className="text-center text-muted-foreground text-sm py-10">No public cases available at this time.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {publicCases.map((c) => (
+                  <div key={c._id} className="bg-background rounded-xl border p-5 space-y-3 hover:shadow-sm transition-shadow">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${CASE_STATUS_COLORS[c.status]}`}>
+                        {CASE_STATUS_LABELS[c.status]}
+                      </span>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${CASE_PRIORITY_COLORS[c.priority]}`}>
+                        {c.priority}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-sm leading-snug line-clamp-2">{c.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{c.description}</p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+                      <span>{CASE_CATEGORY_LABELS[c.category] || c.category}</span>
+                      <span>{c.location}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

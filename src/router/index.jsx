@@ -27,6 +27,8 @@ const SavedReports = lazy(() => import('@/pages/reports/SavedReports'))
 
 const Profile = lazy(() => import('@/pages/profile/Profile'))
 
+const VictimDashboard = lazy(() => import('@/pages/victim/VictimDashboard'))
+
 const PageLoader = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -79,6 +81,26 @@ const router = createBrowserRouter([
 
           // Profile
           { path: '/profile', element: <Suspense fallback={<PageLoader />}><Profile /></Suspense> },
+        ],
+      },
+    ],
+  },
+
+  // Victim-only routes
+  {
+    element: <ProtectedRoute allowedRoles={[ROLES.VICTIM]} />,
+    children: [
+      {
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AppLayout />
+          </Suspense>
+        ),
+        children: [
+          {
+            path: '/my-cases',
+            element: <Suspense fallback={<PageLoader />}><VictimDashboard /></Suspense>,
+          },
         ],
       },
     ],
