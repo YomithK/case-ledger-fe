@@ -4,9 +4,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 const ProgressTimeline = lazy(() => import('@/pages/progress/ProgressTimeline'))
 const EvidenceList = lazy(() => import('@/pages/evidence/EvidenceList'))
 import {
-  getCaseById, assignInvestigator, updateCaseStatus, deleteCase,
+  getCaseById, assignInvestigator, updateCaseStatus, deleteCase, assignVictim,
 } from '@/api/case.api'
-import { getAssignableUsers } from '@/api/ref.api'
+import { getAssignableUsers, getVictimUsers } from '@/api/ref.api'
 import { useAuth } from '@/hooks/useAuth'
 import {
   ROLES, CASE_STATUS_LABELS, CASE_CATEGORY_LABELS, CASE_PRIORITY_LABELS,
@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, ArrowLeft, Edit, UserCheck, RefreshCw, Trash2 } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Edit, UserCheck, RefreshCw, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 // ─── Assign Investigator Modal ───────────────────────────────────────────────
@@ -151,6 +151,97 @@ function StatusModal({ open, onClose, caseId, currentStatus, onSuccess }) {
   )
 }
 
+// ─── Assign Victim Modal ─────────────────────────────────────────────────────
+
+function AssignVictimModal({ open, onClose, caseId, onSuccess }) {
+  const [mode, setMode] = useState('select') // 'select' | 'invite'
+  const [search, setSearch] = useState('')
+  const [victims, setVictims] = useState([])
+  const [selected, setSelected] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open || mode !== 'select') return
+    getVictimUsers({ search })
+      .then((res) => setVictims(res.data.data || []))
+      .catch(() => { })
+  }, [open, search, mode])
+
+  const handleAssign = async () => {
+    if (mode === 'select' && !selected) return
+    if (mode === 'invite' && !inviteEmail) return
+    setLoading(true)
+    try {
+      const payload = mode === 'select' ? { victimId: selected } : { inviteEmail }
+      await assignVictim(caseId, payload)
+      toast.success(mode === 'invite' ? 'Invitation sent to victim.' : 'Victim assigned successfully.')
+      onSuccess()
+      onClose()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to assign victim.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Assign Victim</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Button size="sm" variant={mode === 'select' ? 'default' : 'outline'} onClick={() => setMode('select')}>
+              From system
+            </Button>
+            <Button size="sm" variant={mode === 'invite' ? 'default' : 'outline'} onClick={() => setMode('invite')}>
+              Invite by email
+            </Button>
+          </div>
+
+          {mode === 'select' ? (
+            <>
+              <Input placeholder="Search victims…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Select value={selected} onValueChange={setSelected}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select victim" />
+                </SelectTrigger>
+                <SelectContent>
+                  {victims.length === 0
+                    ? <SelectItem value="_none" disabled>No victims found</SelectItem>
+                    : victims.map((u) => (
+                      <SelectItem key={u._id} value={u._id}>{u.name} — {u.email}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Victim Email</Label>
+              <Input
+                type="email"
+                placeholder="victim@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">An invitation will be sent to register on the platform.</p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+          <Button onClick={handleAssign} disabled={loading || (mode === 'select' ? !selected : !inviteEmail)}>
+            {loading ? 'Saving…' : mode === 'invite' ? 'Send Invite' : 'Assign'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function CaseDetail() {
@@ -163,6 +254,7 @@ export default function CaseDetail() {
   const [error, setError] = useState('')
 
   const [assignOpen, setAssignOpen] = useState(false)
+  const [victimOpen, setVictimOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -191,6 +283,7 @@ export default function CaseDetail() {
 
   const canEdit = role === ROLES.ADMIN || (role === ROLES.INVESTIGATOR && caseData?.assignedInvestigator?._id === user?._id)
   const canAssign = role === ROLES.ADMIN || role === ROLES.NGO
+  const canAssignVictim = role === ROLES.ADMIN || role === ROLES.INVESTIGATOR
   const canUpdateStatus = role === ROLES.ADMIN || (role === ROLES.INVESTIGATOR && caseData?.assignedInvestigator?._id === user?._id)
   const canDelete = role === ROLES.ADMIN
 
@@ -243,6 +336,11 @@ export default function CaseDetail() {
               <UserCheck className="h-3.5 w-3.5 mr-1.5" /> Assign
             </Button>
           )}
+          {canAssignVictim && (
+            <Button variant="outline" size="sm" onClick={() => setVictimOpen(true)}>
+              <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Victim
+            </Button>
+          )}
           {canUpdateStatus && VALID_STATUS_TRANSITIONS[case_data.status]?.length > 0 && (
             <Button variant="outline" size="sm" onClick={() => setStatusOpen(true)}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Status
@@ -280,6 +378,7 @@ export default function CaseDetail() {
                 ['Reference #', case_data.caseReferenceNumber || '—'],
                 ['Reported By', case_data.reportedBy?.name || '—'],
                 ['Assigned To', case_data.assignedInvestigator?.name || 'Unassigned'],
+                ['Victim', case_data.victim?.name || '—'],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between">
                   <span className="text-muted-foreground">{label}</span>
@@ -330,6 +429,7 @@ export default function CaseDetail() {
 
       {/* Modals */}
       <AssignModal open={assignOpen} onClose={() => setAssignOpen(false)} caseId={id} onSuccess={fetch} />
+      <AssignVictimModal open={victimOpen} onClose={() => setVictimOpen(false)} caseId={id} onSuccess={fetch} />
       <StatusModal open={statusOpen} onClose={() => setStatusOpen(false)} caseId={id} currentStatus={case_data.status} onSuccess={fetch} />
       <ConfirmDialog
         open={deleteOpen}

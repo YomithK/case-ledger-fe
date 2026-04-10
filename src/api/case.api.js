@@ -10,3 +10,4 @@ export const assignInvestigator = (id, data) => api.put(`/cases/${id}/assign`, d
 export const assignVictim = (id, data) => api.put(`/cases/${id}/assign-victim`, data)
 export const updateCaseStatus = (id, data) => api.put(`/cases/${id}/status`, data)
 export const deleteCase = (id) => api.delete(`/cases/${id}`)
+export const assignVictim = (id, data) => api.put(`/cases/${id}/assign-victim`, data)
