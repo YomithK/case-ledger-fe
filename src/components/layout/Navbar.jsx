@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { LogOut, ChevronDown } from 'lucide-react'
+import { LogOut, ChevronDown, Menu } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   DropdownMenu,
@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -25,8 +25,19 @@ export default function Navbar() {
   }
 
   return (
-    <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6 shrink-0">
-      <div />
+    <header className="h-16 border-b border-border bg-background flex items-center justify-between px-4 sm:px-6 shrink-0">
+      {/* Mobile menu button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden"
+        onClick={onMenuClick}
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
+      <div className="hidden lg:block" />
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 h-9">

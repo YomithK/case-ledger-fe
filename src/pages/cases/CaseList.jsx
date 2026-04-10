@@ -175,18 +175,44 @@ export default function CaseList() {
         </div>
       )}
 
-      {/* Table */}
-      <Card>
+      {/* Mobile: Card list */}
+      <div className="md:hidden space-y-2">
+        {loading
+          ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+          : cases.length === 0
+          ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">No cases found.</div>
+          )
+          : cases.map((c) => (
+            <Card key={c._id} className="cursor-pointer hover:shadow-sm transition-shadow" onClick={() => navigate(`/cases/${c._id}`)}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="font-medium text-sm leading-snug line-clamp-2 flex-1">{c.title}</p>
+                  <StatusBadge status={c.status} />
+                </div>
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="font-mono">{c.caseNumber}</span>
+                  <PriorityBadge priority={c.priority} />
+                  <span>{new Date(c.createdAt).toLocaleDateString()}</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        }
+      </div>
+
+      {/* Desktop: Table */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Case #</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
+                <TableHead className="hidden lg:table-cell">Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Priority</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead className="hidden lg:table-cell">Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -214,12 +240,12 @@ export default function CaseList() {
                   >
                     <TableCell className="font-mono text-xs">{c.caseNumber}</TableCell>
                     <TableCell className="font-medium max-w-56 truncate">{c.title}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
                       {CASE_CATEGORY_LABELS[c.category] || c.category}
                     </TableCell>
                     <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell><PriorityBadge priority={c.priority} /></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground hidden lg:table-cell">
                       {new Date(c.createdAt).toLocaleDateString()}
                     </TableCell>
                   </TableRow>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSavedReports, createSavedReport, deleteSavedReport } from '@/api/report.api'
+import { getSavedReports, createSavedReport, deleteSavedReport, downloadCasesCsv } from '@/api/report.api'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, Trash2, BookMarked, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, BookMarked, AlertCircle, Download } from 'lucide-react'
 import { REPORT_TYPES } from '@/utils/constants'
 
 const REPORT_TYPE_LABELS = {
@@ -89,6 +89,7 @@ export default function SavedReports() {
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteItem, setDeleteItem] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   const fetch = () => {
     setLoading(true)
@@ -96,6 +97,23 @@ export default function SavedReports() {
       .then((res) => setReports(res.data.data?.reports || []))
       .catch(() => {})
       .finally(() => setLoading(false))
+  }
+
+  const handleDownloadCsv = async () => {
+    setDownloading(true)
+    try {
+      const res = await downloadCasesCsv()
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `cases-report-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('CSV download failed', err)
+    } finally {
+      setDownloading(false)
+    }
   }
 
   useEffect(() => { fetch() }, [])
@@ -120,9 +138,15 @@ export default function SavedReports() {
           <h1 className="text-2xl font-bold tracking-tight">Saved Reports</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Manage saved report configurations</p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" /> New Report
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleDownloadCsv} disabled={downloading}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            {downloading ? 'Downloading…' : 'Download CSV'}
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> New Report
+          </Button>
+        </div>
       </div>
 
       {loading ? (

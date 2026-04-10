@@ -7,11 +7,13 @@ import {
   User,
   Scale,
   BookOpen,
+  X,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { ROLES } from '@/utils/constants'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [ROLES.ADMIN, ROLES.NGO, ROLES.INVESTIGATOR] },
@@ -22,7 +24,7 @@ const navItems = [
   { to: '/profile', label: 'Profile', icon: User, roles: null },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { role, user } = useAuth()
 
   const visible = navItems.filter(
@@ -34,15 +36,27 @@ export default function Sidebar() {
     : '?'
 
   return (
-    <aside className="w-60 bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
+    <aside className="w-60 h-full bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
       {/* Logo */}
-      <div className="h-16 flex items-center gap-2.5 px-5 border-b border-sidebar-border">
-        <div className="h-7 w-7 rounded-md bg-sidebar-foreground flex items-center justify-center shrink-0">
-          <Scale className="h-4 w-4 text-sidebar" />
+      <div className="h-16 flex items-center justify-between gap-2.5 px-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-7 w-7 rounded-md bg-sidebar-foreground flex items-center justify-center shrink-0">
+            <Scale className="h-4 w-4 text-sidebar" />
+          </div>
+          <span className="font-bold text-sidebar-foreground text-base tracking-tight">
+            Case Ledger
+          </span>
         </div>
-        <span className="font-bold text-sidebar-foreground text-base tracking-tight">
-          Case Ledger
-        </span>
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground shrink-0"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Nav */}
@@ -51,6 +65,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={onClose}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
