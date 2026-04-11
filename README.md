@@ -1,4 +1,4 @@
-# Case Ledger — Frontend v1.0.0
+# Case Ledger — Frontend v1.1.0
 
 > React-based web application for the Human Rights Case Tracking System.
 
@@ -253,3 +253,27 @@ The frontend is deployed on **Vercel**.
 6. **Deploy** — Vercel builds and deploys on every push to the connected branch.
 
 7. **Verify** by visiting the live URL and confirming the landing page loads correctly.
+
+---
+
+## Changelog
+
+### v1.1.0 — April 2026
+
+**New Features**
+
+- **Victim Role**: New victim dashboard with access to associated cases and public evidence. Victim-specific sidebar navigation and protected routes.
+- **Profile Photo Upload**: Users can upload a profile photo from their profile settings. Photos are stored on Cloudinary and displayed across the app.
+- **Mobile Responsive Layout**: Slide-in sidebar with hamburger menu and overlay for mobile and tablet screen sizes.
+- **Victim Assignment UI**: Case detail page supports assigning a victim from registered users or inviting an unregistered user by email.
+- **Report CSV Download**: Each saved report now has an individual Download CSV button. Report creation modal includes date range filters (start date / end date).
+- **Email Notifications**: Visual flows reflect email triggers for investigator assignment, victim assignment, case progress updates, and victim invitations.
+
+**Bug Fixes**
+
+- "Assign" and "Victim" buttons in Case Detail renamed to "Assign Investigator" and "Assign Victim" for clarity.
+- Assignment buttons are now hidden when the case is already resolved/closed or already has an investigator/victim assigned.
+- Removed search bar from assign investigator and assign victim modals.
+- Fixed dropdown data path so investigator and victim lists populate correctly from the API response.
+- Removed duplicate `assignVictim` export from `case.api.js`.
+- Removed top-level Download CSV button from Saved Reports page; per-report download now available on each report card.
