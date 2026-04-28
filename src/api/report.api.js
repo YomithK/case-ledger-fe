@@ -27,3 +27,10 @@ export const getSavedReportById = (id) => api.get(`/reports/${id}`)
 export const createSavedReport = (data) => api.post('/reports', data)
 export const updateSavedReport = (id, data) => api.put(`/reports/${id}`, data)
 export const deleteSavedReport = (id) => api.delete(`/reports/${id}`)
+
+// CSV download
+export const downloadCasesCsv = (params) =>
+  api.get('/reports/cases/download', { params, responseType: 'blob' })
+
+export const downloadSavedReport = (id) =>
+  api.get(`/reports/${id}/download`, { responseType: 'blob' })
